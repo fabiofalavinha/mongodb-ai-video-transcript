@@ -1,43 +1,44 @@
 import argparse
-from VideoService import VideoService
-from VideoConfigurationActions import VideoConfigurationActions
-from MongoDbRepository import MongoDbRepository
 
 from link_factory import LinkFactory
+from mongodb_repository import MongoDbRepository
+from openai_service import OpenAIService
+from search_service import MongoDBSearchService
+from viceo_configuration_actions import VideoConfigurationActions
+from video_service import VideoService
 
 
 def main():
     parser = argparse.ArgumentParser(description='Process and transcribe YouTube videos.')
     parser.add_argument('--youtube', type=str, required=True, help='YouTube link for transcription.')
-    parser.add_argument('--searchFor', type=str,
-                        help='Text to search for in previously processed video transcriptions.')
+    parser.add_argument('--searchFor', type=str, help='Text to search for in previously processed video transcriptions.')
     args = parser.parse_args()
 
-    # Initializing objects
     linkFactory = LinkFactory()
     youtube_link = linkFactory.create_link(args.youtube)
 
-    # Assuming you have a configuration file with database details
     repository = MongoDbRepository("mongodb_connection_string", "database_name", "collection_name")
+    openAiService = OpenAIService()
+    searchService = MongoDBSearchService("collection_name", openAiService)
 
-    # Let's assume the OpenAIService is already initialized as openAiService
     video_actions = (VideoConfigurationActions()
-                     .enableAI(openAiService)
+                     .enable_ai(openAiService)
                      .summarization()
-                     .codeAnalysis()
+                     .code_analysis()
                      .build())
-
-    videoService = VideoService(repository)
+    videoService = VideoService()
 
     if not args.searchFor:
-        result = videoService.generateTranscription(youtube_link, video_actions)
-        # You can print the result or do something else with it
-        print(result.transcription)  # Just a sample action
+        result = videoService.generate_transcription(youtube_link, video_actions)
+        videoTranscript = result.video_transcription
+        print(videoTranscript)
 
+        videoDocument = repository.insertOne(videoTranscript)
+        videoSummaryEmbeddings = searchService.createEmbedding(videoTranscript.summary)
+        repository.storeEmbedding(video_id=videoDocument["_id"], embedding=videoSummaryEmbeddings)
     else:
-        search_results = repository.searchBy(args.searchFor)
+        search_results = searchService.searchBy(args.searchFor)
         for r in search_results:
-            # Printing video URL for each match
             print(r['videoUrl'])
 
 
