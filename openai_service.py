@@ -6,7 +6,7 @@ class OpenAIService:
     SEARCH_ENGINE = "text-embedding-ada-002"
 
     def __init__(self) -> None:
-        self.__model = "gpt-3.5-turbo"
+        self.__model = self.CHAT_MODEL
         openai.api_key = "openai.key"
         openai.api_type = "openai.api.type"
         openai.api_base = "openai.api.base"
@@ -34,14 +34,3 @@ class OpenAIService:
             return response.choices[0].message["content"]
         except Exception as ex:
             raise Exception(f"Error creating a chat completion prompt using [{messages}]: {ex}")
-
-    def promptCompletion(self, promptText: str) -> str:
-        try:
-            response = openai.Completion.create(
-                engine="mops-davinci-003",
-                prompt=promptText,
-                max_tokens=200
-            )
-            return response.choices[0].text.strip()
-        except Exception as ex:
-            raise Exception(f"Error creating a completion prompt using [{promptText}]: {ex}")

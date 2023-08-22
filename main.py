@@ -21,11 +21,9 @@ def main():
     openAiService = OpenAIService()
     searchService = MongoDBSearchService("collection_name", openAiService)
 
-    video_actions = (VideoConfigurationActions()
-                     .enable_ai(openAiService)
-                     .summarization()
-                     .code_analysis()
-                     .build())
+    video_actions = (
+        VideoConfigurationActions().enable_ai(openAiService).summarization().code_analysis().build()
+    )
     videoService = VideoService()
 
     if not args.searchFor:
