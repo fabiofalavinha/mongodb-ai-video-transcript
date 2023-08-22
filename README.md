@@ -48,12 +48,12 @@ This repository contains a Python-based solution for summarizing YouTube video t
 2. Run the script:
 
 ```bash
-  python main.py
-  For searching within the stored embeddings in MongoDB Atlas:
+  python main.py --youtube https://www.youtube.com/watch?v=sample_id
+  To generate the transcription of a YouTube video.
 ```
 
 ```bash
-  python search.py "your_search_query_here"
+  python main.py --searchFor "your_search_query_here"
 ```
 
 ## Contributing
