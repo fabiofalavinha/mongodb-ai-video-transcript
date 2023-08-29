@@ -6,7 +6,10 @@ from langchain.document_loaders import YoutubeLoader
 
 from pytube import YouTube
 
+import youtube_link
 from link import Link
+from openai_service import OpenAIService
+
 from viceo_configuration_actions import VideoConfigurationActions
 from video_transcript import VideoTranscript
 from video_transcription_result import VideoTranscriptResult
@@ -17,30 +20,26 @@ import pytesseract
 
 
 class VideoService:
-    def __init__(self, open_ai_service):
-        self.open_ai_service = open_ai_service
+    def __init__(self):
         self.locker = Lock()
         self.executor = ThreadPoolExecutor()
 
-    def generate_transcription(self, link: YouTubeLink, video_actions: VideoConfigurationActions) -> VideoTranscriptResult:
+    def generateTranscription(self, link: YouTubeLink, video_actions: VideoConfigurationActions) -> VideoTranscriptResult:
         print(f"Loading YouTube video [{link.url}]...")
 
-        # Load video transcript from YouTube
         loader = YoutubeLoader.from_youtube_url(link.url, add_video_info=True)
         result = loader.load()
 
-        # Extract video metadata and transcript
         video_transcription = VideoTranscript()
+        video_transcription.videoUrl = link.url
         for document in result:
             video_transcription.metadata = document.metadata
             video_transcription.transcript = document.page_content
 
-        # If AI is enabled, process the transcript
         if video_actions.ai_enabled:
-            openai_service = video_actions.openai_service
             try:
                 print(f"Summarizing YouTube video transcript [{link.url}]...")
-                summarized_response = openai_service.prompt_chat_completion(
+                summarized_response = video_actions.openai_service.prompt_chat_completion(
                     messages=[
                         {
                             "role": "system",
@@ -60,24 +59,24 @@ class VideoService:
                 print(f"Error summarizing YouTube video transcript [{link.url}]: {ex}")
                 video_transcription.summary = f"Error summarizing YouTube video transcript [{link.url}]: {ex}"
 
-        # If code analysis is enabled, analyze the code (dummy logic as real logic wasn't provided)
-        if video_actions.code_analysis_enabled:
-            video_transcription.code_analysis = self.analyzeCodeInVideo(link)
+            if video_actions.code_analysis_enabled:
+                video_transcription.code_analysis = self.analyzeCodeInVideo(link, video_actions.openai_service)
 
         # Return result
         return VideoTranscriptResult(video_transcription)
 
-    def cleanCode(self, raw_code):
+    @staticmethod
+    def cleanCode(raw_code):
         return ''.join([char for char in raw_code if char.isalnum() or char in ' \n\t(){}[];,.+-*/='])
 
-    def analyzeCode(self, codeTextToBeAnalyzed, analyzed_codes: []):
+    def analyzeCode(self, codeTextToBeAnalyzed, analyzed_codes: [], openAiService: OpenAIService):
         with self.locker:
-            cleanedCode = self.cleanCode(codeTextToBeAnalyzed)
+            cleanedCode = VideoService.cleanCode(codeTextToBeAnalyzed)
 
             if cleanedCode is not None and len(cleanedCode) > 0:
                 with open('extracted_code.txt', 'a') as file:
                     file.write(cleanedCode + '\n')
-                    code_analyzed = self.open_ai_service.prompt_chat_completion(
+                    code_analyzed = openAiService.promptChatCompletion(
                         messages=[
                             {
                                 "role": "system",
@@ -96,7 +95,7 @@ class VideoService:
                     if code_analyzed is not None and len(code_analyzed) > 0:
                         analyzed_codes.append(code_analyzed)
 
-    def analyzeCodeInVideo(self, link: Link):
+    def analyzeCodeInVideo(self, link: Link, openAiService: OpenAIService):
         videoUrl = link.url
         print(f"Load YouTube video [{videoUrl}]...")
         yt = YouTube(videoUrl)
@@ -122,7 +121,7 @@ class VideoService:
                 codeText = pytesseract.image_to_string(frame)
 
                 if codeText != lastCodeText:
-                    self.executor.submit(self.analyzeCode, codeText, analyzed_codes)
+                    self.executor.submit(self.analyzeCode, codeText, analyzed_codes, openAiService)
                     lastCodeText = codeText
 
             except Exception as ex:
