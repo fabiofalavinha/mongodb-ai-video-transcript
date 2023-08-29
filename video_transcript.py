@@ -3,4 +3,4 @@ class VideoTranscript:
         self.metadata = None
         self.transcript = ""
         self.summary = ""
-        self.code_analysis = ""
+        self.code_analysis = []

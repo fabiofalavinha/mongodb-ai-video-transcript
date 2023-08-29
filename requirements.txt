@@ -20,3 +20,4 @@ yarl==1.9.2
 langchain==0.0.262
 youtube-transcript-api==0.6.1
 pytube==15.0.0
+opencv-python==4.8.0.74
