@@ -39,7 +39,7 @@ class VideoService:
         if video_actions.ai_enabled:
             try:
                 print(f"Summarizing YouTube video transcript [{link.url}]...")
-                summarized_response = video_actions.openai_service.prompt_chat_completion(
+                summarized_response = video_actions.openai_service.promptChatCompletion(
                     messages=[
                         {
                             "role": "system",
