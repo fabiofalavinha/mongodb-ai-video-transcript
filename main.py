@@ -18,9 +18,6 @@ def main():
              'the question what do you want to know about the video')
     args = parser.parse_args()
 
-    linkFactory = LinkFactory()
-    youtube_link = linkFactory.create_link(args.youtube)
-
     mongoDbRepository = MongoDbRepository("mongodb_connection_string", "database_name", "collection_name")
     openAiService = OpenAIService()
     searchService = MongoDBSearchService("collection_name", openAiService)
