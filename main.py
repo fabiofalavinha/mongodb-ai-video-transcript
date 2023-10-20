@@ -1,6 +1,5 @@
 import argparse
 
-from link_factory import LinkFactory
 from mongodb_repository import MongoDbRepository
 from openai_service import OpenAIService
 from search_service import MongoDBSearchService
